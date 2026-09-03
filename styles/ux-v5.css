@@ -1,0 +1,520 @@
+/* ==========================================================================
+   UX v5 — the built recommendations
+   ==========================================================================
+
+   Loaded last. Everything here implements one of the findings from the
+   "Rebuilding the Analyzer" proposal, and each block names the finding and
+   the option it builds.
+
+   REVERT: delete the <link> to this file in index.html. Behaviour that needs
+   JavaScript is additionally gated by a flag in js/core/ux.js.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Header treatment — completes the v2 palette migration
+   -------------------------------------------------------------------------- */
+
+/*
+ * The header ground and ink move in dda-v2.css. What that alone cannot do is
+ * replace the *separation* the dark bar was providing: with a light header
+ * over light rows, the boundary needs drawing. A gold rule does it, which is
+ * the accent working through a rule rather than through type.
+ */
+.data-table thead th {
+  border-bottom: 2px solid var(--color-brand-gold);
+  border-right-color: var(--color-border);
+}
+
+.matrix thead th {
+  border-bottom: 2px solid var(--color-brand-gold);
+}
+
+/* ==========================================================================
+   One table treatment
+   ==========================================================================
+   The `.matrix` grids (Levers > Tier Incentives) and the `.data-table` grids
+   had drifted into two different looks. The matrix had three things the data
+   tables did not: a first column with its own ground, alternating row tints,
+   and a body that stayed white so those tints could read. The data tables had
+   a white row-header column (an earlier decision of mine) and, on the
+   `tinted` variant, a body filled edge to edge with sand -- which left no
+   contrast for striping and made the row-header column disappear into it.
+
+   The matrix treatment wins, applied to both.
+   ========================================================================== */
+
+/* ---- 1. The body stays white, so alternating rows have something to say -- */
+.data-table--tinted tbody td {
+  background-color: var(--color-surface);
+  border-bottom-color: var(--color-border-subtle);
+}
+
+/* ---- 2. Alternating rows -------------------------------------------------
+   Excludes the empty state, which is one cell spanning the table and has no
+   row to alternate with. */
+.data-table tbody tr:nth-child(even):not(.is-empty-row) > td {
+  background-color: var(--color-surface-sunken);
+}
+
+/* ---- 3. The row-header column keeps its own ground on every row ----------
+   Matching .matrix__label: sand ground, brown ink, held apart from the
+   figures beside it rather than blending into the stripe. */
+.data-table td.is-rowhead,
+.data-table tbody tr:nth-child(even):not(.is-empty-row) > td.is-rowhead {
+  background-color: var(--color-surface-muted);
+  color: var(--color-brand-brown);
+  font-weight: var(--font-weight-medium);
+}
+
+.data-table th.is-rowhead {
+  background-color: var(--color-surface-muted);
+}
+
+/* ---- Hover outranks both, as it does on the matrix ----------------------- */
+.data-table > tbody > tr:hover > td,
+.data-table > tbody > tr:focus-within > td {
+  background-color: var(--color-surface-hover);
+}
+
+.data-table > tbody > tr:hover > td.is-rowhead,
+.data-table > tbody > tr:focus-within > td.is-rowhead {
+  background-color: var(--color-surface-muted-strong);
+}
+
+/* A cross-panel highlight is a selected state and outranks the stripe. */
+.data-table tbody td.is-sync-highlight,
+.data-table tbody tr:nth-child(even) > td.is-sync-highlight {
+  background-color: var(--color-primary-subtle);
+  box-shadow: inset 0 0 0 1px var(--color-brand-gold);
+}
+
+/* ---- The matrix header's own divider ------------------------------------
+   It was a 30%-white rule, drawn for the dark header this palette retired;
+   on sand it is invisible. Same border both tables use now. */
+.matrix thead th {
+  border-right: 1px solid var(--color-border);
+}
+
+.matrix thead th:last-child {
+  border-right: 0;
+}
+
+/* ---- The two matrix key classes read as one column ----------------------
+   .matrix__label holds the tier grid's row names and .matrix__rowhead the
+   weight-break grid's range columns. They were a shade apart (#f2ede4 against
+   #e5e0d8), so the same kind of column looked different between two grids
+   sitting one tab from each other. Both take the label's ground. */
+.matrix__rowhead {
+  background-color: var(--color-surface-muted);
+  color: var(--color-brand-brown);
+}
+
+.matrix tbody tr:nth-child(even) .matrix__rowhead {
+  background-color: var(--color-surface-muted);
+}
+
+/* --------------------------------------------------------------------------
+   Links — record links were blue; v2 removes blue at any value
+   -------------------------------------------------------------------------- */
+.record-link__label,
+.data-table a,
+.matrix a {
+  text-decoration-color: var(--color-brand-gold);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.data-table a:hover,
+.matrix a:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Focus — the system's gold, backed so it is actually visible
+   -------------------------------------------------------------------------- */
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: var(--focus-ring-offset);
+  box-shadow: 0 0 0 calc(var(--focus-ring-width) + var(--focus-ring-offset))
+              var(--color-focus-ring-backing);
+}
+
+/* ==========================================================================
+   F1 C — Report frame
+   ==========================================================================
+
+   The defect: embedded report tables carried max-height: none, so the
+   viewport sized to its content and never scrolled. `thead { position:
+   sticky; top: 0 }` had nothing to stick inside, and the page scrolled
+   instead -- taking the column names with it. Cost Details measured
+   2,640px of table in a 1,334px viewport with its horizontal scrollbar
+   below the fold.
+
+   The fix: the table owns a bounded scroll box in both axes, with the
+   header row and the identity columns pinned, and a second scrollbar
+   docked above the grid so sideways movement is reachable without
+   scrolling the page first.
+   ========================================================================== */
+
+.data-table__viewport--auto.is-framed {
+  max-height: var(--frame-max-height, min(58vh, 620px));
+  overflow: auto;
+  /*
+   * Vertical scroll must chain to the page.
+   *
+   * This carried `overscroll-behavior: contain`, meant to stop the page
+   * lurching when a grid hit its end. What it actually did was trap the wheel:
+   * with the pointer anywhere over a table the page would not scroll at all,
+   * and on a grid that only scrolls sideways -- most of them -- there was
+   * nothing to scroll vertically either, so the wheel simply died. The
+   * pointer had to be moved off the table to move the page.
+   *
+   * `x: contain` is worth keeping: it stops a sideways flick on a wide grid
+   * from triggering the browser's back-navigation gesture. The vertical axis
+   * chains as it should.
+   */
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
+}
+
+/*
+ * The sticky header needs a ground of its own once it is floating over rows.
+ * background-clip keeps the gold rule from bleeding under the next cell.
+ */
+.is-framed .data-table thead th {
+  background-color: var(--color-surface-muted);
+  background-clip: padding-box;
+}
+
+/* The frozen group's trailing edge, marking where pinned ends and scrolling
+   begins. Heavier than v4's, because it now has to read against sand. */
+.data-table--frozen .is-frozen-edge {
+  box-shadow: 1px 0 0 var(--color-border-strong),
+              4px 0 6px -3px rgba(53, 28, 21, 0.18);
+}
+
+/*
+ * The pinned corner. `.data-table td.is-rowhead` and friends carry a
+ * background at real specificity, and a header cell that is also a frozen
+ * identity column has to beat all of them or the corner turns transparent
+ * and the rows scroll visibly underneath it.
+ */
+.data-table thead th.is-frozen-col,
+.data-table thead th.is-frozen-col.is-rowhead {
+  background-color: var(--color-surface-muted);
+  z-index: 5;
+}
+
+/* ---- The top-docked horizontal scrollbar -------------------------------- */
+.table-frame {
+  display: flex;
+  flex-direction: column;
+}
+
+.table-frame__scroller {
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* Tall enough to hold a scrollbar on platforms that reserve space for one,
+     and harmless on platforms that overlay it. */
+  height: 14px;
+  flex: none;
+  background-color: var(--color-surface-muted);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.table-frame__scroller > div {
+  height: 1px;
+}
+
+/* Nothing to scroll: don't draw a rail with no purpose. */
+.table-frame__scroller[hidden] {
+  display: none;
+}
+
+/* ==========================================================================
+   F2 B — Interleaved comparison matrix
+   ==========================================================================
+
+   The defect: two scenario panels 604px wide holding 725px tables, clipping
+   the Ann Rev column in both; rendered 422px and 454px tall because one
+   scenario carries an extra row, so every row below it sat one row out of
+   register with its counterpart. The control that repaired this defaulted
+   to off.
+
+   The fix: one table, one row per line item. Rows align because there is
+   only one row. The delta is read rather than computed.
+   ========================================================================== */
+
+.compare-matrix__group {
+  border-left: 2px solid var(--color-border-strong);
+}
+
+.data-table thead th.compare-matrix__group-head {
+  text-align: center;
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  font-size: var(--font-size-2xs);
+  /* The group band is one field spanning its metric, so it keeps the gold
+     rule for the table's outer edge only and separates by tone instead. */
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+.data-table .compare-delta--up { color: var(--color-success-text); }
+.data-table .compare-delta--down { color: var(--color-error); }
+.data-table .compare-delta--flat { color: var(--color-text-muted); }
+
+.data-table td.compare-delta {
+  font-weight: var(--font-weight-medium);
+}
+
+/* The scenario a row belongs to, named on the group header rather than
+   repeated in every cell. */
+.compare-matrix__scen {
+  display: block;
+  font-size: var(--font-size-3xs);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: var(--letter-spacing-normal);
+  text-transform: none;
+  color: var(--color-text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   F2 — the side-by-side fallback, kept usable when the flag is off
+   -------------------------------------------------------------------------- */
+.comparison-grid {
+  padding: var(--space-4);
+  gap: var(--space-4);
+}
+
+/* ==========================================================================
+   F3 B — Guide rails
+   ==========================================================================
+
+   The defect: the three-level plan tree indented 9px per level -- 63 -> 72
+   -> 81 -- and rendered every level as an identical 34px row at identical
+   weight. Depth was invisible. At the other extreme the comparison
+   accordion spent roughly 85px of container before the first figure.
+
+   The fix: a real 20px step with a hairline rail down each open level, a
+   sand ground on level-one headers, and the gold-wash selected state on the
+   open leaf. Rows come down because structure no longer depends on air.
+   ========================================================================== */
+
+.has-tree-rails .plan-tree {
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+}
+
+/* Level one reads as a section header, not as another row. */
+.has-tree-rails .plan-tree > .accordion--plan > .accordion__trigger {
+  background-color: var(--color-surface-muted);
+  border-radius: var(--radius-container);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-normal);
+  text-transform: none;
+  color: var(--color-brand-brown);
+  padding: var(--space-2) var(--space-3);
+}
+
+/* Every nested level is drawn against a rail, so the branch you are inside
+   stays traceable while scrolled. */
+.has-tree-rails .accordion--plan > .accordion__panel {
+  margin-left: var(--space-4);
+  padding: var(--space-1) 0 var(--space-1) var(--space-4);
+  border-left: 1px solid var(--color-border-strong);
+  gap: var(--space-1);
+}
+
+.has-tree-rails .accordion--plan:not(.accordion--plan-leaf) > .accordion__trigger {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--letter-spacing-normal);
+  text-transform: none;
+  padding: var(--space-1) var(--space-2);
+}
+
+/* The leaf is the thing being edited; it says so at rest, not on hover. */
+.has-tree-rails .accordion--plan-leaf > .accordion__trigger {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: var(--letter-spacing-normal);
+  text-transform: none;
+  color: var(--color-text-secondary);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-control);
+}
+
+.has-tree-rails .accordion--plan-leaf > .accordion__trigger[aria-expanded="true"] {
+  background-color: var(--color-primary-subtle);
+  box-shadow: inset 3px 0 0 var(--color-brand-gold);
+  color: var(--color-brand-brown);
+  font-weight: var(--font-weight-medium);
+}
+
+/* ---- The account tree, same treatment ----------------------------------- */
+.has-tree-rails .tree {
+  padding: var(--space-3);
+}
+
+.has-tree-rails .tree__node + .tree__node {
+  margin-top: var(--space-1);
+}
+
+/* The 20px step becomes a rail rather than a bare margin. */
+.has-tree-rails .tree__node--nested {
+  margin-left: 0;
+  padding-left: var(--space-5);
+  border-left: 1px solid var(--color-border-strong);
+}
+
+.has-tree-rails .tree__body {
+  margin-top: var(--space-1);
+  margin-left: var(--space-4);
+}
+
+.has-tree-rails .tree__row {
+  padding: var(--space-1) var(--space-3);
+  border-color: transparent;
+  border-radius: var(--radius-control);
+}
+
+.has-tree-rails .tree__row:hover {
+  border-color: var(--color-border);
+}
+
+.has-tree-rails .tree__table {
+  margin-left: var(--space-4);
+}
+
+/* Depth by kind, not by indent alone. */
+.has-tree-rails .tree__label--parent {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-normal);
+  text-transform: none;
+  color: var(--color-brand-brown);
+}
+
+.has-tree-rails .tree__label--group {
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--color-text-muted);
+}
+
+/* ---- Container density -------------------------------------------------- */
+/*
+ * The comparison accordion: 53px trigger over a 16/16/20 panel. The trigger
+ * is a section label, not a control that needs a button's mass.
+ */
+.has-tree-rails .accordion--filled > .accordion__trigger {
+  padding: var(--space-2) var(--space-3);
+}
+
+.has-tree-rails .accordion--filled > .accordion__panel {
+  padding: var(--space-2) var(--space-2) var(--space-3);
+}
+
+/* ==========================================================================
+   F6 A — Verdict strip
+   ==========================================================================
+
+   The defect: the comparison band presents eight raw figures and a Change
+   row, and nothing states whether the scenario is better. The driver detail
+   exists but is hover-only, so it cannot be read at rest or handed to an
+   approver.
+
+   The fix: a strip that states the call and names the drivers behind it.
+   Every figure comes from the same recorded data the band already uses --
+   nothing here is computed differently or invented.
+   ========================================================================== */
+
+.verdict {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-container);
+  overflow: hidden;
+  margin-bottom: var(--space-4);
+}
+
+.verdict__call {
+  flex: 1.4 1 260px;
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--color-primary-subtle);
+  border-right: 1px solid var(--color-gold-soft, #ffe7a3);
+}
+
+.verdict__driver {
+  flex: 1 1 130px;
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+  border-right: 1px solid var(--color-border);
+}
+
+.verdict__driver:last-child {
+  border-right: 0;
+}
+
+.verdict__key {
+  display: block;
+  font-size: var(--font-size-3xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wider);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.verdict__call .verdict__key {
+  color: var(--color-brand-brown);
+  opacity: 0.75;
+}
+
+.verdict__headline {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+  color: var(--color-brand-brown);
+}
+
+.verdict__value {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-primary);
+}
+
+.verdict__value--up { color: var(--color-success-text); }
+.verdict__value--down { color: var(--color-error); }
+.verdict__value--flat { color: var(--color-text-muted); }
+
+.verdict__sub {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------------------------------
+   Responsive
+   -------------------------------------------------------------------------- */
+@media (max-width: 900px) {
+  .verdict__call,
+  .verdict__driver {
+    flex-basis: 100%;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .data-table__viewport--auto.is-framed {
+    max-height: 70vh;
+  }
+}

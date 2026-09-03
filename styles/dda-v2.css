@@ -1,0 +1,123 @@
+/* ==========================================================================
+   DDA Colour System v2 — palette migration
+   ==========================================================================
+
+   Loaded after tokens.css and redefines colour tokens only. Nothing else in
+   the product changes: every component already consumes tokens rather than
+   raw values, so the whole palette moves from one file.
+
+   REVERT: delete the <link> to this file in index.html.
+
+   What v2 changes, and why:
+
+   - Dark persistent chrome is retired. The system names rails, context bars
+     and *sticky headers* explicitly. The v4 table header was #5F5652 with
+     white type -- the highest-contrast object on a screen whose subject is
+     the figures beneath it. Header ground becomes Sand Subtle, header ink
+     becomes UPS Brown.
+   - Blue is removed at any value: it sits outside the UPS family. Record
+     links, informational states and the focus ring were all blue.
+   - Teal is not in the v2 palette either. Selected states become the
+     system's own active pattern: brown label on a gold-wash ground.
+   - Gold is the single interactive accent, and never carries meaning as type
+     on a light ground (1.9:1). It works through fills, rules and indicators.
+
+   Contrast, measured against the ground each token actually sits on:
+     brown  #351C15 on sand-subtle #F2EDE4 ....... 13.9:1  AAA
+     brown  #3A2600 on gold CTA     #FFB500 ......  7.4:1  AAA
+     ink    #1F1F1F on white        #FFFFFF ...... 16.1:1  AAA
+     muted  #6B6B6B on warm sand    #F7F2EA ......  4.9:1  AA
+   ========================================================================== */
+
+:root {
+  /* ---- Brand ------------------------------------------------------------ */
+  /* v4 used #ffc400; the system's anchor is #FFB500. */
+  --color-brand-gold: #ffb500;
+  --color-brand-gold-hover: #eda800;
+  --color-brand-gold-active: #d99a00;
+  --color-brand-brown: #351c15;
+  --color-brand-shield: #ffb500;
+
+  /* ---- Primary — was teal, now the gold accent -------------------------- */
+  --color-primary: #ffb500;
+  --color-primary-hover: #eda800;
+  --color-primary-active: #d99a00;
+  --color-primary-subtle: #fff6e0;   /* Gold Wash — the selected-state ground */
+  /* Never white on gold: 1.9:1. The system pairs gold with dark brown ink. */
+  --color-on-primary: #3a2600;
+  /* Where the accent has to be read as *type*, it is brown, not gold. */
+  --color-primary-text: #351c15;
+
+  /* ---- Neutral surfaces — the 75 band ----------------------------------- */
+  --color-bg: #f7f2ea;               /* Warm Sand — page and canvas ground   */
+  --color-surface: #ffffff;          /* Canvas White — cards, tables, modals */
+  --color-surface-raised: #ffffff;
+  --color-surface-sunken: #fdfbf7;
+  --color-surface-muted: #f2ede4;    /* Sand Subtle — wells, panel headers   */
+  --color-surface-muted-strong: #e5e0d8;
+  --color-surface-hover: #f7f2ea;    /* was #f2f7fb — a blue-tinted hover    */
+
+  /* The table header. This single line is the largest visual change in v5. */
+  --color-surface-inverse: #f2ede4;
+  --color-surface-inverse-warm: #f2ede4;
+
+  /* ---- Borders ---------------------------------------------------------- */
+  --color-border: #e5e0d8;
+  --color-border-strong: #d3cabc;
+  --color-border-subtle: #efe9df;
+
+  /* ---- Text — the 15 band ----------------------------------------------- */
+  --color-text-primary: #1f1f1f;     /* Graphite — figures and body          */
+  --color-text-secondary: #4a423c;   /* Warm Secondary — brown-biased grey   */
+  --color-text-muted: #6b6b6b;
+  /* "Inverse" now means ink on the light header, not white on a dark bar. */
+  --color-text-inverse: #351c15;
+  --color-text-link: #351c15;        /* was #0a61a8 — record-link blue        */
+  --color-text-link-hover: #1f120d;
+
+  /* ---- Semantic — bound to business meaning, never to the accent -------- */
+  --color-info: #6b5647;             /* Info Warm, replacing Information Blue */
+  --color-info-subtle: #fff6e0;
+  --color-success: #1f8a4c;
+  /*
+   * Success Green measures 4.38:1 on white and 4.07:1 on Gold Wash -- under
+   * AA for the 12-13px figures it is used on, and weakest on exactly the
+   * selected row where a favourable delta matters most. Same hue, darkened
+   * until it clears both grounds (5.30 / 4.92). The fill token is unchanged.
+   */
+  --color-success-text: #1b7b44;
+  --color-success-subtle: #e6f3ea;
+  --color-warning: #d98200;
+  --color-warning-subtle: #fdf3e2;
+  --color-error: #c62828;
+  --color-error-subtle: #fbeaea;
+  --color-neutral-badge: #4a423c;
+  --color-neutral-badge-subtle: #f2ede4;
+  /* A value the system overrode -- a cell discount cancelled by a minimum. */
+  --color-nullified: #a8998c;
+
+  /* ---- Form fields — were blue-tinted throughout ------------------------ */
+  --color-field-bg: #ffffff;
+  --color-field-bg-subtle: #f7f2ea;
+  --color-field-border: #d3cabc;
+  --color-field-border-hover: #b8a995;
+  --color-field-border-filled: #4a423c;
+  --color-field-label: #6b6b6b;      /* was #806500, an olive with no home   */
+  --color-field-placeholder: #6b6b6b;
+  --color-field-text: #1f1f1f;
+
+  /* ---- Disabled --------------------------------------------------------- */
+  --color-disabled-bg: #f2ede4;
+  --color-disabled-border: var(--color-border-strong);
+  --color-disabled-text: #7a6a5c;    /* 5.19:1 on white                       */
+
+  /* ---- Focus ------------------------------------------------------------ */
+  /*
+   * The system nominates gold for the focus ring, but gold alone on white is
+   * 1.9:1 and would be the least visible focus state in the product. The ring
+   * is drawn gold and backed by a brown hairline in ux-v5.css, so it reads on
+   * white, on sand and on gold-wash alike while staying the system's colour.
+   */
+  --color-focus-ring: #ffb500;
+  --color-focus-ring-backing: #351c15;
+}
